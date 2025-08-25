@@ -31,8 +31,9 @@ import models  # noqa: F401
 with app.app_context():
     db.create_all()
 
-# Импортируем маршруты после создания таблиц
-import routes  # noqa: F401
+# Регистрируем маршруты после создания таблиц
+with app.app_context():
+    import routes  # noqa: F401
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

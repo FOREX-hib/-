@@ -1,9 +1,9 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify
-from app import app
 from extensions import db
 from models import BotConfig, PostHistory, BotLog
 import pytz
 from datetime import datetime
+from flask import current_app as app
 
 # Import bot_manager with proper error handling to avoid circular imports
 try:
