@@ -17,7 +17,7 @@ def dashboard():
     config = BotConfig.query.first()
     recent_posts = PostHistory.query.order_by(PostHistory.created_at.desc()).limit(5).all()
     recent_logs = BotLog.query.order_by(BotLog.created_at.desc()).limit(10).all()
-    
+
     stats = {
         'total_posts': PostHistory.query.count(),
         'successful_posts': PostHistory.query.filter_by(status='sent').count(),
@@ -26,7 +26,7 @@ def dashboard():
         'is_active': config.is_active if config else False,
         'scheduler_running': bot_manager.is_running if bot_manager else False
     }
-    
+
     return render_template('dashboard.html', 
                          config=config, 
                          stats=stats, 
@@ -45,13 +45,13 @@ def config():
         posting_hour = int(request.form.get('posting_hour', 12))
         posting_minute = int(request.form.get('posting_minute', 0))
         is_active = 'is_active' in request.form
-        
+
         # Get or create config
         config = BotConfig.query.first()
         if not config:
             config = BotConfig()
             db.session.add(config)
-        
+
         # Update config
         config.bot_token = bot_token
         config.channel_id = channel_id
@@ -61,9 +61,9 @@ def config():
         config.posting_hour = posting_hour
         config.posting_minute = posting_minute
         config.is_active = is_active
-        
+
         db.session.commit()
-        
+
         # Restart scheduler if active and bot_manager is available
         if bot_manager:
             if is_active:
@@ -78,12 +78,12 @@ def config():
                 flash('Configuration saved!', 'success')
         else:
             flash('Configuration saved! Note: Bot manager not available.', 'warning')
-        
+
         return redirect(url_for('dashboard'))
-    
+
     config = BotConfig.query.first()
     timezones = ['Europe/Moscow', 'UTC', 'US/Eastern', 'US/Pacific', 'Europe/London', 'Asia/Tokyo']
-    
+
     return render_template('config.html', config=config, timezones=timezones)
 
 @app.route('/posts')
@@ -109,11 +109,11 @@ def generate_preview():
     """Generate a preview post"""
     if not bot_manager:
         return jsonify({'error': 'Bot manager not available'}), 500
-        
+
     try:
         if not bot_manager.load_config():
             return jsonify({'error': 'Bot not configured'}), 400
-        
+
         content = bot_manager.generate_post()
         return jsonify({'content': content})
     except Exception as e:
@@ -125,22 +125,22 @@ def send_post():
     if not bot_manager:
         flash('Bot manager not available', 'error')
         return redirect(url_for('dashboard'))
-        
+
     try:
         content = request.form.get('content')
         if not content:
             flash('Post content is required', 'error')
             return redirect(url_for('dashboard'))
-        
+
         if not bot_manager.load_config():
             flash('Bot not configured', 'error')
             return redirect(url_for('dashboard'))
-        
+
         bot_manager.send_post(content, is_manual=True)
         flash('Post sent successfully!', 'success')
     except Exception as e:
         flash(f'Failed to send post: {str(e)}', 'error')
-    
+
     return redirect(url_for('dashboard'))
 
 @app.route('/test_connections')
@@ -148,11 +148,11 @@ def test_connections():
     """Test bot and API connections"""
     if not bot_manager:
         return jsonify({'error': 'Bot manager not available'}), 500
-        
+
     try:
         if not bot_manager.load_config():
             return jsonify({'error': 'Bot not configured'}), 400
-        
+
         results = bot_manager.test_connections()
         return jsonify(results)
     except Exception as e:
@@ -164,13 +164,13 @@ def toggle_scheduler():
     if not bot_manager:
         flash('Bot manager not available', 'error')
         return redirect(url_for('dashboard'))
-        
+
     try:
         config = BotConfig.query.first()
         if not config:
             flash('Bot not configured', 'error')
             return redirect(url_for('dashboard'))
-        
+
         if bot_manager.is_running:
             bot_manager.stop_scheduler()
             config.is_active = False
@@ -179,9 +179,9 @@ def toggle_scheduler():
             bot_manager.start_scheduler()
             config.is_active = True
             flash('Scheduler started', 'success')
-        
+
         db.session.commit()
     except Exception as e:
         flash(f'Failed to toggle scheduler: {str(e)}', 'error')
-    
+
     return redirect(url_for('dashboard'))
