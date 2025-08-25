@@ -31,9 +31,8 @@ import models  # noqa: F401
 with app.app_context():
     db.create_all()
 
-# Рекомендуется использовать Blueprint в routes и регистрировать его здесь
+# Импортируем маршруты после создания таблиц
 import routes  # noqa: F401
-# например: app.register_blueprint(routes.bp)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

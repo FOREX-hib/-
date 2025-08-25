@@ -6,7 +6,7 @@ from telegram import Bot
 from apscheduler.schedulers.background import BackgroundScheduler
 import pytz
 import google.generativeai as genai
-from app import db
+from extensions import db
 from models import BotConfig, PostHistory, BotLog
 
 class TelegramBotManager:

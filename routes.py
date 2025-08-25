@@ -1,4 +1,5 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify
+from app import app
 from extensions import db
 from models import BotConfig, PostHistory, BotLog
 import pytz
