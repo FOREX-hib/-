@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-paper-plane me-2"></i>Post History
+            </h1>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                {% if posts.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Content</th>
+                                    <th>Status</th>
+                                    <th>Sent At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for post in posts.items %}
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ post.created_at.strftime('%Y-%m-%d') }}<br>
+                                            {{ post.created_at.strftime('%H:%M:%S') }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="post-content" style="max-width: 400px;">
+                                            <p class="mb-0">{{ post.content[:150] }}{% if post.content|length > 150 %}...{% endif %}</p>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if post.status == 'sent' %}bg-success{% elif post.status == 'failed' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                            {{ post.status|title }}
+                                        </span>
+                                        {% if post.error_message %}
+                                            <i class="fas fa-exclamation-triangle text-warning ms-1" 
+                                               title="{{ post.error_message }}" data-bs-toggle="tooltip"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if post.sent_at %}
+                                            <small class="text-muted">
+                                                {{ post.sent_at.strftime('%Y-%m-%d %H:%M') }}
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewPost({{ post.id }}, `{{ post.content|replace('`', '\\`')|replace('\n', '\\n') }}`)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% if post.status == 'failed' or post.status == 'draft' %}
+                                            <form method="POST" action="{{ url_for('send_post') }}" class="d-inline">
+                                                <input type="hidden" name="content" value="{{ post.content }}">
+                                                <button type="submit" class="btn btn-sm btn-success ms-1" 
+                                                        onclick="return confirm('Resend this post?')">
+                                                    <i class="fas fa-redo"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if posts.pages > 1 %}
+                    <nav aria-label="Posts pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if posts.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('posts', page=posts.prev_num) }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                                {% if page_num %}
+                                    {% if page_num != posts.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('posts', page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if posts.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('posts', page=posts.next_num) }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-paper-plane fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No posts yet</h4>
+                        <p class="text-muted">Generate your first post from the dashboard!</p>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-1"></i>Go to Dashboard
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Post Detail Modal -->
+<div class="modal fade" id="postModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-paper-plane me-2"></i>Post Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label"><strong>Content:</strong></label>
+                    <div class="border rounded p-3 bg-body-secondary">
+                        <div id="postContent" style="white-space: pre-wrap;"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Created:</strong> <span id="postCreated"></span></p>
+                        <p><strong>Status:</strong> <span id="postStatus"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Sent:</strong> <span id="postSent"></span></p>
+                        <p><strong>Error:</strong> <span id="postError"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function viewPost(postId, content) {
+    document.getElementById('postContent').textContent = content;
+    const modal = new bootstrap.Modal(document.getElementById('postModal'));
+    modal.show();
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

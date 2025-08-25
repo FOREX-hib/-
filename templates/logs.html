@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-list me-2"></i>System Logs
+            </h1>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                {% if logs.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Level</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs.items %}
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ log.created_at.strftime('%Y-%m-%d') }}<br>
+                                            {{ log.created_at.strftime('%H:%M:%S') }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if log.level == 'ERROR' %}bg-danger{% elif log.level == 'WARNING' %}bg-warning{% elif log.level == 'INFO' %}bg-info{% else %}bg-secondary{% endif %}">
+                                            {{ log.level }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="log-message" style="max-width: 600px;">
+                                            {% if log.message|length > 200 %}
+                                                <div class="collapse" id="collapse{{ log.id }}">
+                                                    <p class="mb-0">{{ log.message }}</p>
+                                                </div>
+                                                <div class="collapsed-preview">
+                                                    <p class="mb-0">{{ log.message[:200] }}...</p>
+                                                    <button class="btn btn-sm btn-link p-0" data-bs-toggle="collapse" data-bs-target="#collapse{{ log.id }}">
+                                                        Show more
+                                                    </button>
+                                                </div>
+                                            {% else %}
+                                                <p class="mb-0">{{ log.message }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if logs.pages > 1 %}
+                    <nav aria-label="Logs pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if logs.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('logs', page=logs.prev_num) }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for page_num in logs.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                                {% if page_num %}
+                                    {% if page_num != logs.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('logs', page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if logs.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('logs', page=logs.next_num) }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-list fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No logs yet</h4>
+                        <p class="text-muted">System logs will appear here when the bot is active.</p>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-1"></i>Go to Dashboard
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Filters (Optional Enhancement) -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-filter me-2"></i>Quick Filters
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="btn-group" role="group" aria-label="Log level filters">
+                    <a href="{{ url_for('logs') }}" class="btn btn-outline-secondary">All</a>
+                    <a href="{{ url_for('logs', level='ERROR') }}" class="btn btn-outline-danger">Errors</a>
+                    <a href="{{ url_for('logs', level='WARNING') }}" class="btn btn-outline-warning">Warnings</a>
+                    <a href="{{ url_for('logs', level='INFO') }}" class="btn btn-outline-info">Info</a>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Logs are automatically cleaned up after 30 days to save space.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Handle collapsed log messages
+document.addEventListener('DOMContentLoaded', function() {
+    const collapseElements = document.querySelectorAll('.collapse');
+    
+    collapseElements.forEach(function(element) {
+        element.addEventListener('shown.bs.collapse', function() {
+            const button = element.parentElement.querySelector('[data-bs-toggle="collapse"]');
+            if (button) button.textContent = 'Show less';
+        });
+        
+        element.addEventListener('hidden.bs.collapse', function() {
+            const button = element.parentElement.querySelector('[data-bs-toggle="collapse"]');
+            if (button) button.textContent = 'Show more';
+        });
+    });
+});
+</script>
+{% endblock %}

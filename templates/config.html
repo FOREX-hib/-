@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>Bot Configuration</h3>
+<form method="post">
+  <div class="mb-3">
+    <label>Bot Token</label>
+    <input type="text" class="form-control" name="bot_token" value="{{ config.bot_token or '' }}">
+  </div>
+  <div class="mb-3">
+    <label>Channel ID (@channel or -100...)</label>
+    <input type="text" class="form-control" name="channel_id" value="{{ config.channel_id or '' }}">
+  </div>
+  <div class="mb-3">
+    <label>System Prompt</label>
+    <textarea class="form-control" name="system_prompt" rows="5">Ты MailMuse Bot. Пост ОБЯЗАТЕЛЬНО:
+    - Начинается строкой «📩 Привет! Я MailMuse Bot — твой AI-ассистент по email-маркетингу.»
+    - Ровно 2 абзаца, ≤ 90 слов каждый.
+    - Тема выбирается случайно из: email-маркетинг, лиды, автоворонки, лендинги, аналитика, личный бренд.
+    - Не упоминать еду, погоду, путешествия, спорт, мотивацию.
+    - 2 хэштега: #mailmuse + тематический.
+    - Заканчивается «Жми 👉 /start, чтобы получить шаблон.»
+    - Длина: 150–200 слов.
+    - сделай все как я сказал без лтшних вопоросов и обьяснение </textarea>
+  </div>
+  <div class="mb-3">
+    <label>Timezone</label>
+    <select class="form-select" name="timezone">
+      {% for tz in timezones %}
+        <option value="{{ tz }}" {% if tz == (config.timezone or 'Europe/Moscow') %}selected{% endif %}>{{ tz }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label>Posting Hour</label>
+    <input type="number" class="form-control" name="posting_hour" min="0" max="23" value="{{ config.posting_hour or 12 }}">
+  </div>
+  <div class="mb-3">
+    <label>Posting Minute</label>
+    <input type="number" class="form-control" name="posting_minute" min="0" max="59" value="{{ config.posting_minute or 0 }}">
+  </div>
+  <div class="mb-3 form-check">
+    <input type="checkbox" class="form-check-input" name="is_active" {% if config and config.is_active %}checked{% endif %}>
+    <label class="form-check-label">Enable scheduler</label>
+  </div>
+  <button type="submit" class="btn btn-success">Save</button>
+</form>
+{% endblock %}
